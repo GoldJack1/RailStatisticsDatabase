@@ -16,10 +16,6 @@ export default function AllStations() {
   const { currentUser, logout } = useAuth();
   const stationsPerPage = 20;
 
-  useEffect(() => {
-    loadStations();
-  }, [loadStations]);
-
   const loadStations = useCallback(async function() {
     try {
       setLoading(true);
@@ -65,6 +61,10 @@ export default function AllStations() {
       setLoading(false);
     }
   }, [stationsPerPage]);
+
+  useEffect(() => {
+    loadStations();
+  }, [loadStations]);
 
   function handleSearch(e) {
     e.preventDefault();

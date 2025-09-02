@@ -14,12 +14,6 @@ export default function ViewStation() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    if (crsCode) {
-      loadStation();
-    }
-  }, [crsCode, loadStation]);
-
   const loadStation = useCallback(async function() {
     try {
       setLoading(true);
@@ -50,6 +44,12 @@ export default function ViewStation() {
       setLoading(false);
     }
   }, [crsCode]);
+
+  useEffect(() => {
+    if (crsCode) {
+      loadStation();
+    }
+  }, [crsCode, loadStation]);
 
   async function handleLogout() {
     try {

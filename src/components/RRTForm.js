@@ -33,14 +33,6 @@ export default function RRTForm() {
 
   const isEditing = !!rrtId;
 
-  useEffect(() => {
-    if (rrtId) {
-      loadRRT();
-    } else {
-      setLoading(false);
-    }
-  }, [rrtId, loadRRT]);
-
   const loadRRT = useCallback(async function() {
     try {
       setLoading(true);
@@ -109,6 +101,14 @@ export default function RRTForm() {
       setLoading(false);
     }
   }, [rrtId, navigate]);
+
+  useEffect(() => {
+    if (rrtId) {
+      loadRRT();
+    } else {
+      setLoading(false);
+    }
+  }, [rrtId, loadRRT]);
 
   function handleChange(e) {
     const { name, value } = e.target;
