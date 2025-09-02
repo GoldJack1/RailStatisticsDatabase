@@ -15,6 +15,7 @@ import RRTList from './components/RRTList';
 import DynamicRRTForm from './components/DynamicRRTForm';
 import RRTImageManager from './components/RRTImageManager';
 import ErrorBoundary from './components/ErrorBoundary';
+import FirebaseDebug from './components/FirebaseDebug';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './index.css';
 
@@ -84,6 +85,11 @@ function App() {
                 <ErrorBoundary>
                   <RRTImageManager />
                 </ErrorBoundary>
+              </PrivateRoute>
+            } />
+            <Route path="/debug" element={
+              <PrivateRoute>
+                <FirebaseDebug />
               </PrivateRoute>
             } />
           </Routes>
