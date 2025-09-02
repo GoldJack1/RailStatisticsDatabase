@@ -4,6 +4,15 @@
 
 [build.environment]
   NODE_VERSION = "18"
+  DISABLE_ESLINT_PLUGIN = "true"
+  REACT_APP_FIREBASE_API_KEY = "AIzaSyD0-OjpeptPX5zG1x0411nkP0cdQq5oWXc"
+  REACT_APP_FIREBASE_AUTH_DOMAIN = "rail-statistics.firebaseapp.com"
+  REACT_APP_FIREBASE_DATABASE_URL = "https://rail-statistics-default-rtdb.europe-west1.firebasedatabase.app"
+  REACT_APP_FIREBASE_PROJECT_ID = "rail-statistics"
+  REACT_APP_FIREBASE_STORAGE_BUCKET = "rail-statistics.firebasestorage.app"
+  REACT_APP_FIREBASE_MESSAGING_SENDER_ID = "998967146702"
+  REACT_APP_FIREBASE_APP_ID = "1:998967146702:web:deea56da65d25bc92ff89f"
+  REACT_APP_FIREBASE_MEASUREMENT_ID = "G-VT13N64VR2"
 
 [[redirects]]
   from = "/*"
