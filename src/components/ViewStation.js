@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Container, Row, Col, Card, Button, Alert, Spinner, Badge, Navbar, Nav } from 'react-bootstrap';
 import { collection, getDocs, query, where } from 'firebase/firestore';
@@ -18,9 +18,9 @@ export default function ViewStation() {
     if (crsCode) {
       loadStation();
     }
-  }, [crsCode]);
+  }, [crsCode, loadStation]);
 
-  async function loadStation() {
+  const loadStation = useCallback(async function() {
     try {
       setLoading(true);
       setError('');
@@ -49,7 +49,7 @@ export default function ViewStation() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [crsCode]);
 
   async function handleLogout() {
     try {

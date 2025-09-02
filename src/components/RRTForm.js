@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Container, Row, Col, Card, Button, Form, Alert, Spinner, Navbar, Nav, Modal } from 'react-bootstrap';
-import { ref, getBytes, uploadBytes, deleteObject } from 'firebase/storage';
+import { ref, getBytes, uploadBytes } from 'firebase/storage';
 import { storage } from '../firebase';
 import { toast } from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
@@ -39,9 +39,9 @@ export default function RRTForm() {
     } else {
       setLoading(false);
     }
-  }, [rrtId]);
+  }, [rrtId, loadRRT]);
 
-  async function loadRRT() {
+  const loadRRT = useCallback(async function() {
     try {
       setLoading(true);
       
@@ -108,7 +108,7 @@ export default function RRTForm() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [rrtId, navigate]);
 
   function handleChange(e) {
     const { name, value } = e.target;

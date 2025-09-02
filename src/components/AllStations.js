@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Container, Row, Col, Card, Button, Form, Table, Alert, Spinner, Badge, Navbar, Nav } from 'react-bootstrap';
 import { collection, getDocs, query, orderBy, limit, startAfter } from 'firebase/firestore';
@@ -18,9 +18,9 @@ export default function AllStations() {
 
   useEffect(() => {
     loadStations();
-  }, []);
+  }, [loadStations]);
 
-  async function loadStations() {
+  const loadStations = useCallback(async function() {
     try {
       setLoading(true);
       
@@ -64,7 +64,7 @@ export default function AllStations() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [stationsPerPage]);
 
   function handleSearch(e) {
     e.preventDefault();

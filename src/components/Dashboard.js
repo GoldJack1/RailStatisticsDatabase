@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Container, Row, Col, Card, Button, Alert, Spinner, Navbar, Nav, Badge } from 'react-bootstrap';
+import { Container, Row, Col, Card, Button, Spinner, Navbar, Nav, Badge } from 'react-bootstrap';
 import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
 import { db } from '../firebase';
 import { toast } from 'react-hot-toast';
