@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Container, Row, Col, Card, Button, Form, Table, Alert, Spinner, Badge, Navbar, Nav } from 'react-bootstrap';
+import { Container, Row, Col, Card, Button, Form, Table, Alert, Spinner, Badge } from 'react-bootstrap';
 import { collection, getDocs, query, orderBy, limit, startAfter } from 'firebase/firestore';
 import { db } from '../firebase';
 import { toast } from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
+import Header from './Header';
 
 export default function AllStations() {
   const [stations, setStations] = useState([]);
@@ -107,34 +108,7 @@ export default function AllStations() {
 
   return (
     <>
-      <Navbar bg="dark" variant="dark" expand="lg" className="mb-4">
-        <Container>
-          <Navbar.Brand 
-            onClick={() => navigate('/dashboard')} 
-            style={{ cursor: 'pointer' }}
-            className="d-flex align-items-center"
-          >
-            🚂 Rail Statistics Database
-          </Navbar.Brand>
-          <Navbar.Toggle aria-controls="basic-navbar-nav" />
-          <Navbar.Collapse id="basic-navbar-nav">
-            <Nav className="me-auto">
-              <Nav.Link onClick={() => navigate('/stations')}>All Stations</Nav.Link>
-              <Nav.Link onClick={() => navigate('/add-station')}>Add Station</Nav.Link>
-              <Nav.Link onClick={() => navigate('/search')}>Search</Nav.Link>
-              <Nav.Link onClick={() => navigate('/rrt')}>RRT Management</Nav.Link>
-            </Nav>
-            <Nav>
-              <Nav.Link disabled>
-                👤 {currentUser?.email}
-              </Nav.Link>
-              <Nav.Link onClick={handleLogout}>
-                🚪 Logout
-              </Nav.Link>
-            </Nav>
-          </Navbar.Collapse>
-        </Container>
-      </Navbar>
+      <Header activeSection="stations" />
 
       <Container>
         <Row className="mb-4">

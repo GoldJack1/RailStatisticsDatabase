@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Container, Row, Col, Card, Button, Form, Table, Alert, Spinner, Badge, Navbar, Nav } from 'react-bootstrap';
+import { Container, Row, Col, Card, Button, Form, Table, Alert, Spinner, Badge } from 'react-bootstrap';
 import { collection, getDocs, query, where, orderBy } from 'firebase/firestore';
 import { db } from '../firebase';
 import { toast } from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
+import Header from './Header';
 
 export default function Search() {
   const [searchTerm, setSearchTerm] = useState('');
+  const [searchType, setSearchType] = useState('stations');
   const [searchResults, setSearchResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
@@ -25,34 +27,100 @@ export default function Search() {
     try {
       setLoading(true);
       setHasSearched(true);
-      
-      // Search by CRS code first (exact match)
-      let q = query(
-        collection(db, 'stations'),
-        where('crsCode', '==', searchTerm.trim().toUpperCase())
-      );
-      
-      let snapshot = await getDocs(q);
       let results = [];
-      
-      snapshot.forEach(doc => {
-        results.push({ id: doc.id, ...doc.data() });
-      });
 
-      // If no exact CRS match, search by station name (contains)
-      if (results.length === 0) {
-        q = query(
+      if (searchType === 'stations') {
+        // Search by CRS code first (exact match)
+        let q = query(
           collection(db, 'stations'),
-          orderBy('stationName')
+          where('crsCode', '==', searchTerm.trim().toUpperCase())
+        );
+        
+        let snapshot = await getDocs(q);
+        
+        snapshot.forEach(doc => {
+          results.push({ id: doc.id, type: 'station', ...doc.data() });
+        });
+
+        // If no exact CRS match, search by station name (contains)
+        if (results.length === 0) {
+          q = query(
+            collection(db, 'stations'),
+            orderBy('stationName')
+          );
+          
+          snapshot = await getDocs(q);
+          
+          snapshot.forEach(doc => {
+            const data = doc.data();
+            if (data.stationName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                data.stationNameAlt?.toLowerCase().includes(searchTerm.toLowerCase())) {
+              results.push({ id: doc.id, type: 'station', ...data });
+            }
+          });
+        }
+      } else if (searchType === 'operators') {
+        // Search operators by name, type, or region
+        const q = query(
+          collection(db, 'toc_operators'),
+          orderBy('name')
+        );
+        
+        const snapshot = await getDocs(q);
+        
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          if (data.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+              data.operatortype?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+              data.operatorregion?.toLowerCase().includes(searchTerm.toLowerCase())) {
+            results.push({ id: doc.id, type: 'operator', ...data });
+          }
+        });
+      } else if (searchType === 'all') {
+        // Search both stations and operators
+        // Search stations
+        let q = query(
+          collection(db, 'stations'),
+          where('crsCode', '==', searchTerm.trim().toUpperCase())
+        );
+        
+        let snapshot = await getDocs(q);
+        
+        snapshot.forEach(doc => {
+          results.push({ id: doc.id, type: 'station', ...doc.data() });
+        });
+
+        if (results.length === 0) {
+          q = query(
+            collection(db, 'stations'),
+            orderBy('stationName')
+          );
+          
+          snapshot = await getDocs(q);
+          
+          snapshot.forEach(doc => {
+            const data = doc.data();
+            if (data.stationName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                data.stationNameAlt?.toLowerCase().includes(searchTerm.toLowerCase())) {
+              results.push({ id: doc.id, type: 'station', ...data });
+            }
+          });
+        }
+
+        // Search operators
+        q = query(
+          collection(db, 'toc_operators'),
+          orderBy('name')
         );
         
         snapshot = await getDocs(q);
         
         snapshot.forEach(doc => {
           const data = doc.data();
-          if (data.stationName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-              data.stationNameAlt?.toLowerCase().includes(searchTerm.toLowerCase())) {
-            results.push({ id: doc.id, ...data });
+          if (data.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+              data.operatortype?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+              data.operatorregion?.toLowerCase().includes(searchTerm.toLowerCase())) {
+            results.push({ id: doc.id, type: 'operator', ...data });
           }
         });
       }
@@ -60,9 +128,18 @@ export default function Search() {
       setSearchResults(results);
       
       if (results.length === 0) {
-        toast.info('No stations found matching your search');
+        toast.info(`No ${searchType === 'all' ? 'results' : searchType} found matching your search`);
       } else {
-        toast.success(`Found ${results.length} station(s)`);
+        const stationCount = results.filter(r => r.type === 'station').length;
+        const operatorCount = results.filter(r => r.type === 'operator').length;
+        
+        if (searchType === 'all') {
+          toast.success(`Found ${stationCount} station(s) and ${operatorCount} operator(s)`);
+        } else if (searchType === 'stations') {
+          toast.success(`Found ${results.length} station(s)`);
+        } else {
+          toast.success(`Found ${results.length} operator(s)`);
+        }
       }
       
     } catch (error) {
@@ -80,6 +157,14 @@ export default function Search() {
     navigate(`/edit-station/${crsCode}`);
   }
 
+  function viewOperator(operatorId) {
+    navigate(`/operator/${operatorId}`);
+  }
+
+  function editOperator(operatorId) {
+    navigate(`/edit-operator/${operatorId}`);
+  }
+
   async function handleLogout() {
     try {
       await logout();
@@ -92,40 +177,13 @@ export default function Search() {
 
   return (
     <>
-      <Navbar bg="dark" variant="dark" expand="lg" className="mb-4">
-        <Container>
-          <Navbar.Brand 
-            onClick={() => navigate('/dashboard')} 
-            style={{ cursor: 'pointer' }}
-            className="d-flex align-items-center"
-          >
-            🚂 Rail Statistics Database
-          </Navbar.Brand>
-          <Navbar.Toggle aria-controls="basic-navbar-nav" />
-          <Navbar.Collapse id="basic-navbar-nav">
-            <Nav className="me-auto">
-              <Nav.Link onClick={() => navigate('/stations')}>All Stations</Nav.Link>
-              <Nav.Link onClick={() => navigate('/add-station')}>Add Station</Nav.Link>
-              <Nav.Link onClick={() => navigate('/search')}>Search</Nav.Link>
-              <Nav.Link onClick={() => navigate('/rrt')}>RRT Management</Nav.Link>
-            </Nav>
-            <Nav>
-              <Nav.Link disabled>
-                👤 {currentUser?.email}
-              </Nav.Link>
-              <Nav.Link onClick={handleLogout}>
-                🚪 Logout
-              </Nav.Link>
-            </Nav>
-          </Navbar.Collapse>
-        </Container>
-      </Navbar>
+      <Header activeSection="search" showSearch={false} />
 
       <Container>
         <Row className="mb-4">
           <Col>
             <div className="d-flex justify-content-between align-items-center">
-              <h1>🔍 Search Stations</h1>
+              <h1>🔍 Search Database</h1>
               <Button 
                 variant="outline-secondary" 
                 onClick={() => navigate('/dashboard')}
@@ -145,16 +203,37 @@ export default function Search() {
               <Card.Body>
                 <Form onSubmit={handleSearch}>
                   <Form.Group className="mb-3">
+                    <Form.Label>Search Type</Form.Label>
+                    <Form.Select
+                      value={searchType}
+                      onChange={(e) => setSearchType(e.target.value)}
+                      disabled={loading}
+                    >
+                      <option value="stations">🚉 Stations Only</option>
+                      <option value="operators">🚄 Train Operators Only</option>
+                      <option value="all">🔍 All (Stations & Operators)</option>
+                    </Form.Select>
+                  </Form.Group>
+
+                  <Form.Group className="mb-3">
                     <Form.Label>Search Term</Form.Label>
                     <Form.Control
                       type="text"
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      placeholder="Enter station name or CRS code..."
+                      placeholder={
+                        searchType === 'stations' 
+                          ? "Enter station name or CRS code..." 
+                          : searchType === 'operators'
+                          ? "Enter operator name, type, or region..."
+                          : "Enter station name, CRS code, operator name, etc..."
+                      }
                       disabled={loading}
                     />
                     <Form.Text className="text-muted">
-                      Search by station name or 3-letter CRS code
+                      {searchType === 'stations' && "Search by station name or 3-letter CRS code"}
+                      {searchType === 'operators' && "Search by operator name, type, or operating region"}
+                      {searchType === 'all' && "Search stations by name/CRS code or operators by name/type/region"}
                     </Form.Text>
                   </Form.Group>
                   
@@ -179,13 +258,14 @@ export default function Search() {
               </Card.Header>
               <Card.Body>
                 <ul className="small">
-                  <li><strong>CRS Code:</strong> Use exact 3-letter codes (e.g., PAD, EUS)</li>
-                  <li><strong>Station Name:</strong> Partial names work (e.g., "Paddington", "London")</li>
+                  <li><strong>Stations:</strong> Search by CRS code (exact 3-letter match) or station name (partial)</li>
+                  <li><strong>Operators:</strong> Search by name, operator type, or operating region</li>
+                  <li><strong>All:</strong> Search both stations and operators simultaneously</li>
                   <li><strong>Case Insensitive:</strong> Search works regardless of capitalization</li>
                 </ul>
                 
                 <Alert variant="info" className="mt-3">
-                  <strong>Tip:</strong> CRS codes give exact matches, station names give partial matches.
+                  <strong>Tip:</strong> Use specific terms for better results. CRS codes give exact station matches.
                 </Alert>
               </Card.Body>
             </Card>
@@ -212,38 +292,73 @@ export default function Search() {
                       <Spinner animation="border" role="status">
                         <span className="visually-hidden">Searching...</span>
                       </Spinner>
-                      <p className="mt-2">Searching stations...</p>
+                      <p className="mt-2">Searching {searchType === 'all' ? 'database' : searchType}...</p>
                     </div>
                   ) : searchResults.length === 0 ? (
                     <Alert variant="info">
-                      No stations found matching "{searchTerm}". Try a different search term.
+                      No {searchType === 'all' ? 'results' : searchType} found matching "{searchTerm}". Try a different search term.
                     </Alert>
                   ) : (
                     <Table responsive striped hover>
                       <thead>
                         <tr>
-                          <th>Station Name</th>
-                          <th>CRS Code</th>
-                          <th>Location</th>
+                          <th>Type</th>
+                          <th>Name</th>
+                          <th>Details</th>
+                          <th>Additional Info</th>
                           <th>Actions</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {searchResults.map((station) => (
-                          <tr key={station.id}>
+                        {searchResults.map((result) => (
+                          <tr key={result.id}>
                             <td>
-                              <strong>{station.stationName}</strong>
+                              <Badge bg={result.type === 'station' ? 'primary' : 'warning'}>
+                                {result.type === 'station' ? '🚉 Station' : '🚄 Operator'}
+                              </Badge>
                             </td>
                             <td>
-                              <Badge bg="secondary">{station.crsCode}</Badge>
+                              <strong>
+                                {result.type === 'station' ? result.stationName : result.name}
+                              </strong>
                             </td>
                             <td>
-                              {station.location ? (
-                                <small>
-                                  {station.location.latitude?.toFixed(4)}, {station.location.longitude?.toFixed(4)}
-                                </small>
+                              {result.type === 'station' ? (
+                                <Badge bg="secondary">{result.crsCode}</Badge>
                               ) : (
-                                <small className="text-muted">No coordinates</small>
+                                <div>
+                                  <Badge bg="info" className="me-1">{result.operatortype || 'N/A'}</Badge>
+                                  <Badge bg="secondary">{result.operatorregion || 'N/A'}</Badge>
+                                </div>
+                              )}
+                            </td>
+                            <td>
+                              {result.type === 'station' ? (
+                                result.location ? (
+                                  <small>
+                                    {result.location.latitude?.toFixed(4)}, {result.location.longitude?.toFixed(4)}
+                                  </small>
+                                ) : (
+                                  <small className="text-muted">No coordinates</small>
+                                )
+                              ) : (
+                                result.colorHex ? (
+                                  <div className="d-flex align-items-center">
+                                    <div 
+                                      style={{
+                                        width: '16px',
+                                        height: '16px',
+                                        backgroundColor: result.colorHex,
+                                        border: '1px solid #ddd',
+                                        borderRadius: '3px',
+                                        marginRight: '6px'
+                                      }}
+                                    ></div>
+                                    <small>{result.colorHex}</small>
+                                  </div>
+                                ) : (
+                                  <small className="text-muted">No brand color</small>
+                                )
                               )}
                             </td>
                             <td>
@@ -251,14 +366,20 @@ export default function Search() {
                                 size="sm" 
                                 variant="outline-primary" 
                                 className="me-2"
-                                onClick={() => viewStation(station.crsCode)}
+                                onClick={() => result.type === 'station' 
+                                  ? viewStation(result.crsCode) 
+                                  : viewOperator(result.id)
+                                }
                               >
                                 👁️ View
                               </Button>
                               <Button 
                                 size="sm" 
                                 variant="outline-warning"
-                                onClick={() => editStation(station.crsCode)}
+                                onClick={() => result.type === 'station' 
+                                  ? editStation(result.crsCode) 
+                                  : editOperator(result.id)
+                                }
                               >
                                 ✏️ Edit
                               </Button>

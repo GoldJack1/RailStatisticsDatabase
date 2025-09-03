@@ -179,7 +179,7 @@ export default function RRTImageManager() {
               style={{ cursor: 'pointer' }}
               className="d-flex align-items-center"
             >
-              🚂 Rail Statistics Database
+              Rail Statistics
             </Navbar.Brand>
             <Navbar.Toggle aria-controls="basic-navbar-nav" />
             <Navbar.Collapse id="basic-navbar-nav">
