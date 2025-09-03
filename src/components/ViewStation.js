@@ -1,15 +1,16 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Container, Row, Col, Card, Button, Alert, Spinner, Badge, Navbar, Nav } from 'react-bootstrap';
+import { Container, Row, Col, Card, Button, Alert, Spinner, Badge } from 'react-bootstrap';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../firebase';
 import { toast } from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
+import Header from './Header';
 
 export default function ViewStation() {
   const { crsCode } = useParams();
   const navigate = useNavigate();
-  const { currentUser, logout } = useAuth();
+  const { } = useAuth();
   const [station, setStation] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -51,15 +52,7 @@ export default function ViewStation() {
     }
   }, [crsCode, loadStation]);
 
-  async function handleLogout() {
-    try {
-      await logout();
-      toast.success('Logged out successfully');
-      navigate('/login');
-    } catch (error) {
-      toast.error('Failed to log out: ' + error.message);
-    }
-  }
+
 
   if (loading) {
     return (
@@ -104,34 +97,7 @@ export default function ViewStation() {
 
   return (
     <>
-      <Navbar bg="dark" variant="dark" expand="lg" className="mb-4">
-        <Container>
-          <Navbar.Brand 
-            onClick={() => navigate('/dashboard')} 
-            style={{ cursor: 'pointer' }}
-            className="d-flex align-items-center"
-          >
-            Rail Statistics
-          </Navbar.Brand>
-          <Navbar.Toggle aria-controls="basic-navbar-nav" />
-          <Navbar.Collapse id="basic-navbar-nav">
-            <Nav className="me-auto">
-              <Nav.Link onClick={() => navigate('/stations')}>All Stations</Nav.Link>
-              <Nav.Link onClick={() => navigate('/add-station')}>Add Station</Nav.Link>
-              <Nav.Link onClick={() => navigate('/search')}>Search</Nav.Link>
-              <Nav.Link onClick={() => navigate('/rrt')}>RRT Management</Nav.Link>
-            </Nav>
-            <Nav>
-              <Nav.Link disabled>
-                👤 {currentUser?.email}
-              </Nav.Link>
-              <Nav.Link onClick={handleLogout}>
-                🚪 Logout
-              </Nav.Link>
-            </Nav>
-          </Navbar.Collapse>
-        </Container>
-      </Navbar>
+      <Header />
 
       <Container>
         <Row className="mb-4">
@@ -172,10 +138,40 @@ export default function ViewStation() {
                     <p><strong>CRS Code:</strong></p>
                     <p className="mb-3">
                       <Badge bg="primary" className="fs-6">{station.crsCode}</Badge>
+                      {station.stnCrsId && station.stnCrsId !== station.crsCode && (
+                        <div className="mt-1">
+                          <small className="text-muted">Station CRS ID: </small>
+                          <Badge bg="secondary">{station.stnCrsId}</Badge>
+                        </div>
+                      )}
+                    </p>
+
+                    <p><strong>TIPLOC:</strong></p>
+                    <p className="mb-3">
+                      {station.tiploc ? (
+                        <Badge bg="info">{station.tiploc}</Badge>
+                      ) : (
+                        <span className="text-muted">Not available</span>
+                      )}
+                    </p>
+
+                    <p><strong>Train Operating Company (TOC):</strong></p>
+                    <p className="mb-3">
+                      {station.toc ? (
+                        <Badge bg="success">{station.toc}</Badge>
+                      ) : (
+                        <span className="text-muted">Not available</span>
+                      )}
                     </p>
                   </Col>
                   
                   <Col md={6}>
+                    <p><strong>Country:</strong></p>
+                    <p className="mb-3">{station.country || <span className="text-muted">Not specified</span>}</p>
+
+                    <p><strong>County:</strong></p>
+                    <p className="mb-3">{station.county || <span className="text-muted">Not specified</span>}</p>
+
                     {station.location && (
                       <>
                         <p><strong>Coordinates:</strong></p>
@@ -195,9 +191,38 @@ export default function ViewStation() {
                         </p>
                       </>
                     )}
+
+                    {station.source && (
+                      <>
+                        <p><strong>Data Source:</strong></p>
+                        <p className="mb-3">
+                          <small className="text-muted">{station.source}</small>
+                        </p>
+                      </>
+                    )}
                   </Col>
                 </Row>
                 
+                {station.yearlyPassengers && (
+                  <>
+                    <hr />
+                    <p><strong>Yearly Passenger Numbers:</strong></p>
+                    <Row>
+                      {Object.entries(station.yearlyPassengers).map(([year, passengers]) => (
+                        <Col md={3} key={year} className="mb-2">
+                          <div className="text-center">
+                            <Badge bg="info" className="d-block mb-1">{year}</Badge>
+                            <div className="fw-bold">
+                              {passengers ? passengers.toLocaleString() : 'N/A'}
+                            </div>
+                            <small className="text-muted">passengers</small>
+                          </div>
+                        </Col>
+                      ))}
+                    </Row>
+                  </>
+                )}
+
                 {station.notes && (
                   <>
                     <hr />

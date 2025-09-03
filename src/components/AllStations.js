@@ -78,7 +78,11 @@ export default function AllStations() {
     
     return stations.filter(station => 
       station.stationName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      station.crsCode?.toLowerCase().includes(searchTerm.toLowerCase())
+      station.crsCode?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      station.county?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      station.country?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      station.toc?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      station.tiploc?.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }
 
@@ -131,7 +135,7 @@ export default function AllStations() {
                     <Col md={8}>
                       <Form.Control
                         type="text"
-                        placeholder="Search by station name or CRS code..."
+                        placeholder="Search by station name, CRS code, county, country, TOC, or TIPLOC..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                       />
@@ -182,6 +186,10 @@ export default function AllStations() {
                         <tr>
                           <th>Station Name</th>
                           <th>CRS Code</th>
+                          <th>Country</th>
+                          <th>County</th>
+                          <th>TIPLOC</th>
+                          <th>TOC</th>
                           <th>Location</th>
                           <th>Actions</th>
                         </tr>
@@ -193,7 +201,24 @@ export default function AllStations() {
                               <strong>{station.stationName}</strong>
                             </td>
                             <td>
-                              <Badge bg="secondary">{station.crsCode}</Badge>
+                              <Badge bg="primary">{station.crsCode}</Badge>
+                              {station.stnCrsId && station.stnCrsId !== station.crsCode && (
+                                <div>
+                                  <Badge bg="secondary" className="mt-1">{station.stnCrsId}</Badge>
+                                </div>
+                              )}
+                            </td>
+                            <td>
+                              <small>{station.country || '-'}</small>
+                            </td>
+                            <td>
+                              <small>{station.county || '-'}</small>
+                            </td>
+                            <td>
+                              <small className="text-info">{station.tiploc || '-'}</small>
+                            </td>
+                            <td>
+                              <Badge bg="success" className="small">{station.toc || '-'}</Badge>
                             </td>
                             <td>
                               {station.location ? (
@@ -205,21 +230,22 @@ export default function AllStations() {
                               )}
                             </td>
                             <td>
-                              <Button 
-                                size="sm" 
-                                variant="outline-primary" 
-                                className="me-2"
-                                onClick={() => viewStation(station.crsCode)}
-                              >
-                                👁️ View
-                              </Button>
-                              <Button 
-                                size="sm" 
-                                variant="outline-warning"
-                                onClick={() => editStation(station.crsCode)}
-                              >
-                                ✏️ Edit
-                              </Button>
+                              <div className="d-flex flex-column gap-1">
+                                <Button 
+                                  size="sm" 
+                                  variant="outline-primary"
+                                  onClick={() => viewStation(station.crsCode)}
+                                >
+                                  View
+                                </Button>
+                                <Button 
+                                  size="sm" 
+                                  variant="outline-warning"
+                                  onClick={() => editStation(station.crsCode)}
+                                >
+                                  Edit
+                                </Button>
+                              </div>
                             </td>
                           </tr>
                         ))}

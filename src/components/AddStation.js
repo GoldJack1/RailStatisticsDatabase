@@ -1,22 +1,32 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Container, Row, Col, Card, Button, Form, Alert, Navbar, Nav } from 'react-bootstrap';
+import { Container, Row, Col, Card, Button, Form, Alert } from 'react-bootstrap';
 import { collection, addDoc, GeoPoint } from 'firebase/firestore';
 import { db } from '../firebase';
 import { toast } from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
+import Header from './Header';
 
 export default function AddStation() {
   const [formData, setFormData] = useState({
     stationName: '',
     crsCode: '',
+    stnCrsId: '',
+    country: '',
+    county: '',
+    tiploc: '',
+    toc: '',
+    source: '',
     latitude: '',
-    longitude: ''
+    longitude: '',
+    yearlyPassengers: {}
   });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
+  const [newPassengerYear, setNewPassengerYear] = useState('');
+  const [newPassengerCount, setNewPassengerCount] = useState('');
   const navigate = useNavigate();
-  const { currentUser, logout } = useAuth();
+  const { } = useAuth();
 
   function handleChange(e) {
     const { name, value } = e.target;
@@ -59,6 +69,32 @@ export default function AddStation() {
     return Object.keys(newErrors).length === 0;
   }
 
+  function addPassengerData() {
+    if (!newPassengerYear || !newPassengerCount) return;
+    
+    setFormData(prev => ({
+      ...prev,
+      yearlyPassengers: {
+        ...prev.yearlyPassengers,
+        [newPassengerYear]: parseInt(newPassengerCount)
+      }
+    }));
+    
+    setNewPassengerYear('');
+    setNewPassengerCount('');
+  }
+
+  function removePassengerData(year) {
+    setFormData(prev => {
+      const newYearlyPassengers = { ...prev.yearlyPassengers };
+      delete newYearlyPassengers[year];
+      return {
+        ...prev,
+        yearlyPassengers: newYearlyPassengers
+      };
+    });
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
     
@@ -72,6 +108,13 @@ export default function AddStation() {
       const stationData = {
         stationName: formData.stationName.trim(),
         crsCode: formData.crsCode.trim().toUpperCase(),
+        stnCrsId: formData.stnCrsId.trim() || formData.crsCode.trim().toUpperCase(),
+        country: formData.country.trim(),
+        county: formData.county.trim(),
+        tiploc: formData.tiploc.trim(),
+        toc: formData.toc.trim(),
+        source: formData.source.trim(),
+        yearlyPassengers: formData.yearlyPassengers,
         uploadedAt: new Date().toISOString()
       };
 
@@ -95,46 +138,9 @@ export default function AddStation() {
     }
   }
 
-  async function handleLogout() {
-    try {
-      await logout();
-      toast.success('Logged out successfully');
-      navigate('/login');
-    } catch (error) {
-      toast.error('Failed to log out: ' + error.message);
-    }
-  }
-
   return (
     <>
-      <Navbar bg="dark" variant="dark" expand="lg" className="mb-4">
-        <Container>
-          <Navbar.Brand 
-            onClick={() => navigate('/dashboard')} 
-            style={{ cursor: 'pointer' }}
-            className="d-flex align-items-center"
-          >
-            Rail Statistics
-          </Navbar.Brand>
-          <Navbar.Toggle aria-controls="basic-navbar-nav" />
-          <Navbar.Collapse id="basic-navbar-nav">
-            <Nav className="me-auto">
-              <Nav.Link onClick={() => navigate('/stations')}>All Stations</Nav.Link>
-              <Nav.Link onClick={() => navigate('/add-station')}>Add Station</Nav.Link>
-              <Nav.Link onClick={() => navigate('/search')}>Search</Nav.Link>
-              <Nav.Link onClick={() => navigate('/rrt')}>RRT Management</Nav.Link>
-            </Nav>
-            <Nav>
-              <Nav.Link disabled>
-                👤 {currentUser?.email}
-              </Nav.Link>
-              <Nav.Link onClick={handleLogout}>
-                🚪 Logout
-              </Nav.Link>
-            </Nav>
-          </Navbar.Collapse>
-        </Container>
-      </Navbar>
+      <Header />
 
       <Container>
         <Row className="mb-4">
@@ -192,6 +198,152 @@ export default function AddStation() {
                       3-letter station code
                     </Form.Text>
                   </Form.Group>
+
+                  <Form.Group className="mb-3">
+                    <Form.Label>Station CRS ID</Form.Label>
+                    <Form.Control
+                      type="text"
+                      name="stnCrsId"
+                      value={formData.stnCrsId}
+                      onChange={handleChange}
+                      placeholder="e.g., AAP (defaults to CRS code if empty)"
+                    />
+                    <Form.Text className="text-muted">
+                      Alternative station identifier
+                    </Form.Text>
+                  </Form.Group>
+
+                  <Row>
+                    <Col md={6}>
+                      <Form.Group className="mb-3">
+                        <Form.Label>Country</Form.Label>
+                        <Form.Control
+                          type="text"
+                          name="country"
+                          value={formData.country}
+                          onChange={handleChange}
+                          placeholder="e.g., England"
+                        />
+                      </Form.Group>
+                    </Col>
+                    <Col md={6}>
+                      <Form.Group className="mb-3">
+                        <Form.Label>County</Form.Label>
+                        <Form.Control
+                          type="text"
+                          name="county"
+                          value={formData.county}
+                          onChange={handleChange}
+                          placeholder="e.g., London (City Of)"
+                        />
+                      </Form.Group>
+                    </Col>
+                  </Row>
+
+                  <Row>
+                    <Col md={6}>
+                      <Form.Group className="mb-3">
+                        <Form.Label>TIPLOC</Form.Label>
+                        <Form.Control
+                          type="text"
+                          name="tiploc"
+                          value={formData.tiploc}
+                          onChange={handleChange}
+                          placeholder="e.g., ALEXNDP"
+                        />
+                        <Form.Text className="text-muted">
+                          Timing Point Location Code
+                        </Form.Text>
+                      </Form.Group>
+                    </Col>
+                    <Col md={6}>
+                      <Form.Group className="mb-3">
+                        <Form.Label>TOC</Form.Label>
+                        <Form.Control
+                          type="text"
+                          name="toc"
+                          value={formData.toc}
+                          onChange={handleChange}
+                          placeholder="e.g., GTR"
+                        />
+                        <Form.Text className="text-muted">
+                          Train Operating Company
+                        </Form.Text>
+                      </Form.Group>
+                    </Col>
+                  </Row>
+
+                  <Form.Group className="mb-3">
+                    <Form.Label>Data Source</Form.Label>
+                    <Form.Control
+                      type="text"
+                      name="source"
+                      value={formData.source}
+                      onChange={handleChange}
+                      placeholder="e.g., NEWSTNARRAY.csv"
+                    />
+                    <Form.Text className="text-muted">
+                      Original data source file or system
+                    </Form.Text>
+                  </Form.Group>
+
+                  <Card className="mb-3">
+                    <Card.Header>
+                      <h6 className="mb-0">Yearly Passenger Numbers</h6>
+                    </Card.Header>
+                    <Card.Body>
+                      {Object.keys(formData.yearlyPassengers).length > 0 && (
+                        <div className="mb-3">
+                          {Object.entries(formData.yearlyPassengers).map(([year, passengers]) => (
+                            <div key={year} className="d-flex justify-content-between align-items-center mb-2 p-2 bg-light rounded">
+                              <div>
+                                <strong>{year}:</strong> {passengers ? passengers.toLocaleString() : 'N/A'} passengers
+                              </div>
+                              <Button
+                                size="sm"
+                                variant="outline-danger"
+                                onClick={() => removePassengerData(year)}
+                              >
+                                Remove
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      
+                      <Row>
+                        <Col md={4}>
+                          <Form.Control
+                            type="number"
+                            placeholder="Year (e.g., 1998)"
+                            value={newPassengerYear}
+                            onChange={(e) => setNewPassengerYear(e.target.value)}
+                            min="1900"
+                            max="2030"
+                          />
+                        </Col>
+                        <Col md={6}>
+                          <Form.Control
+                            type="number"
+                            placeholder="Passenger count"
+                            value={newPassengerCount}
+                            onChange={(e) => setNewPassengerCount(e.target.value)}
+                            min="0"
+                          />
+                        </Col>
+                        <Col md={2}>
+                          <Button
+                            variant="outline-primary"
+                            onClick={addPassengerData}
+                            disabled={!newPassengerYear || !newPassengerCount}
+                            className="w-100"
+                          >
+                            Add
+                          </Button>
+                        </Col>
+                      </Row>
+                    </Card.Body>
+                  </Card>
 
                   <Row>
                     <Col md={6}>
